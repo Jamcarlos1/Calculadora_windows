@@ -5,20 +5,24 @@ class CalcController {
 
     this._operation = [];
     this._displayCalcEl = document.querySelector("#display");
-    this._currentDate;
     this.initialize();
+  }
+
+  initialize() {
+    this.setLastNumberToDisplay();
+    this.pasteToClipboard();
     this.initButtonsEvents();
     this.initKeyboard();
   }
 
-  pasteFromClipboard() {
+  pasteToClipboard() {
     document.addEventListener("paste", (e) => {
       let text = e.clipboardData.getData("Text");
       this.displayCalc = parseFloat(text);
     });
   }
 
-  copyToClipboard() {
+  copyFromClipboard() {
     let input = document.createElement("input");
 
     input.value = this.displayCalc;
@@ -30,10 +34,7 @@ class CalcController {
     document.execCommand("Copy");
     input.remove();
   }
-  initialize() {
-    this.setLastNumberToDisplay();
-    this.pasteFromClipboard();
-  }
+
   initKeyboard() {
     document.addEventListener("keyup", (e) => {
       switch (e.key) {
@@ -77,7 +78,7 @@ class CalcController {
           break;
 
         case "c":
-          if (e.ctrlKey) this.copyToClipboard();
+          if (e.ctrlKey) this.copyFromClipboard();
           break;
       }
     });
@@ -101,6 +102,18 @@ class CalcController {
     this.setLastNumberToDisplay();
   }
 
+  clearLast() {
+    if (isNaN(this._operation[this._operation.length - 1])) {
+      this._operation.pop();
+    } else {
+      this._operation[this._operation.length - 1] = this._operation[
+        this._operation.length - 1
+      ]
+        .toString()
+        .slice(0, -1);
+    }
+    this.setLastNumberToDisplay();
+  }
   getLastOperation() {
     return this._operation[this._operation.length - 1];
   }
@@ -109,7 +122,7 @@ class CalcController {
   }
 
   isOperator(value) {
-    return ["+", "-", "*", "%", "/"].indexOf(value) > -1;
+    return ["+", "-", "*", "%", "/", "√", "x²", "¹/x", "±"].indexOf(value) > -1;
   }
 
   pushOperation(value) {
@@ -123,6 +136,7 @@ class CalcController {
   getResult() {
     return eval(this._operation.join(""));
   }
+
   calc() {
     let last = "";
 
@@ -233,6 +247,98 @@ class CalcController {
 
     this.setLastNumberToDisplay();
   }
+
+  plusMinusOperator() {
+    let element = this._operation[this._operation.length - 1].toString();
+    if (this.isOperator(element)) {
+      this._operation.push("-");
+    } else {
+      if (element[0] == "-") {
+        this._operation[this._operation.length - 1] = element.slice(
+          1,
+          element.length
+        );
+      } else {
+        let minus = "-";
+        minus += this._operation[this._operation.length - 1];
+        this._operation[this._operation.length - 1] = minus;
+      }
+    }
+    this.setLastNumberToDisplay();
+  }
+
+  equationOperation(value = null) {
+    if (this._operation.length < 2) {
+      switch (value) {
+        case "√":
+          this._operation = [Math.sqrt(this._operation[0]).toString()];
+          break;
+        case "x²":
+          this._operation = [Math.pow(this._operation[0], 2).toString()];
+          break;
+        case "¹/x":
+          this._operation = [1 / this._operation[0].toString()];
+          break;
+        default:
+          this._operation = [
+            eval(
+              this._operation + this._lastOperator + this._lastNumber
+            ).toString(),
+          ];
+      }
+    } else {
+      if (this._operation.length < 3) {
+        switch (value) {
+          case "%":
+          case "x²":
+            this._operation.push(Math.pow(this._operation[0], 2).toString());
+            break;
+          case "√":
+            this._operation.push(Math.sqrt(this._operation[0]).toString());
+            break;
+          case "¹/x":
+            this._operation.push(1 / this._operation[0].toString());
+            break;
+          default:
+            this._operation.push(this._operation[0]);
+        }
+      } else {
+        switch (value) {
+          case "%":
+            this._operation[this._operation.length - 1] *=
+              this._operation[0] / 100;
+            this._operation[this._operation.length - 1] =
+              this._operation[this._operation.length - 1].toString();
+            break;
+          case "√":
+            this._operation[this._operation.length - 1] = Math.sqrt(
+              this._operation[this._operation.length - 1]
+            ).toString();
+            break;
+          case "x²":
+            this._operation[this._operation.length - 1] = Math.pow(
+              this._operation[this._operation.length - 1],
+              2
+            ).toString();
+            break;
+          case "¹/x":
+            this._operation[this._operation.length - 1] =
+              1 / this._operation[this._operation.length - 1].toString();
+            break;
+          default:
+            this._operation.push(this._operation[0]);
+        }
+      }
+      this.equal();
+    }
+    this.setLastNumberToDisplay();
+  }
+
+  equal() {
+    this._lastOperator = this._operation[this._operation.length - 2];
+    this._lastNumber = this._operation[this._operation.length - 1];
+    this._operation = [eval(this._operation.join("")).toString()];
+  }
   execBtn(value) {
     switch (value) {
       case "C":
@@ -240,6 +346,10 @@ class CalcController {
         break;
       case "CE":
         this.clearEntry();
+        break;
+      case "←":
+      case "Backspace":
+        this.clearLast();
         break;
       case "+":
         this.addOperation("+");
@@ -253,15 +363,27 @@ class CalcController {
       case "X":
         this.addOperation("*");
         break;
-      case "%":
-        this.addOperation("%");
-        break;
       case "=":
         this.calc();
         break;
       case ".":
       case ",":
         this.addDot(".");
+        break;
+      case "±":
+        this.plusMinusOperator("±");
+        break;
+      case "%":
+        this.equationOperation("%");
+        break;
+      case "¹/x":
+        this.equationOperation("¹/x");
+        break;
+      case "x²":
+        this.equationOperation("x²");
+        break;
+      case "√":
+        this.equationOperation("√");
         break;
 
       case "0":
