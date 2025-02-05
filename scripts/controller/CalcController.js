@@ -5,24 +5,20 @@ class CalcController {
 
     this._operation = [];
     this._displayCalcEl = document.querySelector("#display");
+    this._currentDate;
     this.initialize();
-  }
-
-  initialize() {
-    this.setLastNumberToDisplay();
-    this.pasteToClipboard();
     this.initButtonsEvents();
     this.initKeyboard();
   }
 
-  pasteToClipboard() {
+  pasteFromClipboard() {
     document.addEventListener("paste", (e) => {
       let text = e.clipboardData.getData("Text");
       this.displayCalc = parseFloat(text);
     });
   }
 
-  copyFromClipboard() {
+  copyToClipboard() {
     let input = document.createElement("input");
 
     input.value = this.displayCalc;
@@ -34,7 +30,10 @@ class CalcController {
     document.execCommand("Copy");
     input.remove();
   }
-
+  initialize() {
+    this.setLastNumberToDisplay();
+    this.pasteFromClipboard();
+  }
   initKeyboard() {
     document.addEventListener("keyup", (e) => {
       switch (e.key) {
@@ -78,7 +77,7 @@ class CalcController {
           break;
 
         case "c":
-          if (e.ctrlKey) this.copyFromClipboard();
+          if (e.ctrlKey) this.copyToClipboard();
           break;
       }
     });
@@ -102,18 +101,6 @@ class CalcController {
     this.setLastNumberToDisplay();
   }
 
-  clearLast() {
-    if (isNaN(this._operation[this._operation.length - 1])) {
-      this._operation.pop();
-    } else {
-      this._operation[this._operation.length - 1] = this._operation[
-        this._operation.length - 1
-      ]
-        .toString()
-        .slice(0, -1);
-    }
-    this.setLastNumberToDisplay();
-  }
   getLastOperation() {
     return this._operation[this._operation.length - 1];
   }
@@ -122,7 +109,7 @@ class CalcController {
   }
 
   isOperator(value) {
-    return ["+", "-", "*", "%", "/", "√", "x²", "¹/x", "±"].indexOf(value) > -1;
+    return ["+", "-", "*", "%", "/"].indexOf(value) > -1;
   }
 
   pushOperation(value) {
@@ -136,7 +123,6 @@ class CalcController {
   getResult() {
     return eval(this._operation.join(""));
   }
-
   calc() {
     let last = "";
 
@@ -348,10 +334,6 @@ class CalcController {
       case "CE":
         this.clearEntry();
         break;
-      case "←":
-      case "Backspace":
-        this.clearLast();
-        break;
       case "+":
         this.addOperation("+");
         break;
@@ -363,6 +345,9 @@ class CalcController {
         break;
       case "X":
         this.addOperation("*");
+        break;
+      case "%":
+        this.addOperation("%");
         break;
       case "=":
         this.calc();
