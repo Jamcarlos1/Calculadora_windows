@@ -248,46 +248,45 @@ class CalcController {
     this.setLastNumberToDisplay();
   }
 
-  plusMinusOperator() {
-    let element = this._operation[this._operation.length - 1].toString();
-    if (this.isOperator(element)) {
+  toggleMinusOperator() {
+    const lastOperator = this._operation[this._operation.length - 1].toString();
+
+    if (this.isOperator(lastOperator)) {
       this._operation.push("-");
     } else {
-      if (element[0] == "-") {
-        this._operation[this._operation.length - 1] = element.slice(
-          1,
-          element.length
-        );
+      if (lastOperator.startsWith("-")) {
+        this._operation[this._operation.length - 1] = lastOperator.slice(1);
       } else {
-        let minus = "-";
-        minus += this._operation[this._operation.length - 1];
-        this._operation[this._operation.length - 1] = minus;
+        this._operation[this._operation.length - 1] = `-${lastOperator}`;
       }
     }
+
     this.setLastNumberToDisplay();
   }
 
-  equationOperation(value = null) {
-    if (this._operation.length < 2) {
-      switch (value) {
-        case "√":
-          this._operation = [Math.sqrt(this._operation[0]).toString()];
-          break;
-        case "x²":
-          this._operation = [Math.pow(this._operation[0], 2).toString()];
-          break;
-        case "¹/x":
-          this._operation = [1 / this._operation[0].toString()];
-          break;
-        default:
-          this._operation = [
-            eval(
-              this._operation + this._lastOperator + this._lastNumber
-            ).toString(),
-          ];
-      }
-    } else {
-      if (this._operation.length < 3) {
+  performOperation(value = null) {
+    const lastIndex = this._operation.length - 1;
+
+    {
+      if (this._operation.length < 2) {
+        switch (value) {
+          case "√":
+            this._operation = [Math.sqrt(this._operation[0]).toString()];
+            break;
+          case "x²":
+            this._operation = [Math.pow(this._operation[0], 2).toString()];
+            break;
+          case "¹/x":
+            this._operation = [(1 / this._operation[0]).toString()];
+            break;
+          default:
+            this._operation = [
+              eval(
+                `${this._operation}${this._lastOperator}${this._lastNumber}`
+              ).toString(),
+            ];
+        }
+      } else if (this._operation.length < 3) {
         switch (value) {
           case "%":
           case "x²":
@@ -297,7 +296,7 @@ class CalcController {
             this._operation.push(Math.sqrt(this._operation[0]).toString());
             break;
           case "¹/x":
-            this._operation.push(1 / this._operation[0].toString());
+            this._operation.push((1 / this._operation[0]).toString());
             break;
           default:
             this._operation.push(this._operation[0]);
@@ -305,36 +304,38 @@ class CalcController {
       } else {
         switch (value) {
           case "%":
-            this._operation[this._operation.length - 1] *=
-              this._operation[0] / 100;
-            this._operation[this._operation.length - 1] =
-              this._operation[this._operation.length - 1].toString();
+            this._operation[lastIndex] = (
+              this._operation[lastIndex] *
+              (this._operation[0] / 100)
+            ).toString();
             break;
           case "√":
-            this._operation[this._operation.length - 1] = Math.sqrt(
-              this._operation[this._operation.length - 1]
+            this._operation[lastIndex] = Math.sqrt(
+              this._operation[lastIndex]
             ).toString();
             break;
           case "x²":
-            this._operation[this._operation.length - 1] = Math.pow(
-              this._operation[this._operation.length - 1],
+            this._operation[lastIndex] = Math.pow(
+              this._operation[lastIndex],
               2
             ).toString();
             break;
           case "¹/x":
-            this._operation[this._operation.length - 1] =
-              1 / this._operation[this._operation.length - 1].toString();
+            this._operation[lastIndex] = (
+              1 / this._operation[lastIndex]
+            ).toString();
             break;
           default:
             this._operation.push(this._operation[0]);
         }
       }
-      this.equal();
+
+      this.calculateResult();
     }
     this.setLastNumberToDisplay();
   }
 
-  equal() {
+  calculateResult() {
     this._lastOperator = this._operation[this._operation.length - 2];
     this._lastNumber = this._operation[this._operation.length - 1];
     this._operation = [eval(this._operation.join("")).toString()];
@@ -371,19 +372,19 @@ class CalcController {
         this.addDot(".");
         break;
       case "±":
-        this.plusMinusOperator("±");
+        this.toggleMinusOperator("±");
         break;
       case "%":
-        this.equationOperation("%");
+        this.performOperation("%");
         break;
       case "¹/x":
-        this.equationOperation("¹/x");
+        this.performOperation("¹/x");
         break;
       case "x²":
-        this.equationOperation("x²");
+        this.performOperation("x²");
         break;
       case "√":
-        this.equationOperation("√");
+        this.performOperation("√");
         break;
 
       case "0":
